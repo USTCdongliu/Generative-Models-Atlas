@@ -1,28 +1,196 @@
-# NFs
+# NICE
 
 ## 发表情况
-- Rezende, D., & Mohamed, S. (2015, June). Variational inference with normalizing flows. In International conference on machine learning (pp. 1530-1538). PMLR.
-  - ICML 2015
-- 主要作者：Danilo Jimenez Rezende，Shakir Mohamed
-  - Google Deepmind
-- 截止2026.10 cite：6983+
-- 
-- [原文链接](https://proceedings.mlr.press/v37/rezende15.pdf)
+- Dinh, L., Krueger, D., & Bengio, Y. (2014). Nice: Non-linear independent components estimation. arXiv preprint arXiv:1410.8516.
+  - ICLR 2015 （实际上是2014年的工作，是NFs这个方向最早的工作之一）
+- 主要作者：Laurent Dinh，David Krueger，Yoshua Bengio
+  - 蒙特利尔大学 CIFAR工作
+- 截止2026.10 cite：3564+
+- **归一化流（Normalizing Flow）的开山之作**，以加法耦合层构造行列式易算、可逆的非线性变换，实现可精确似然、可采样的非线性独立成分估计与密度建模
+- [原文链接](https://arxiv.org/pdf/1410.8516)
 
 ## 摘要解读：
-
+- 论文提出了一种名为 Non-linear Independent Component Estimation（NICE）的深度学习框架，用于建模复杂的高维概率分布
+  - 作者认为，一个好的数据表示，应该让数据在新的表示空间中变得容易建模
+  - 这里的易建模指的是潜变量的联合概率分布可以分解为各个维度边缘概率分布的乘积
+  - 论文所说的 Independent Components，首先是指潜变量的概率分布被建模为因子化分布，并不意味着网络一定能够恢复真实世界中具有明确物理意义的独立因素
+ 
+- 基于上述的建模思想，文章提出了一系列的设计原则来实现这样一个网络架构
+  - 第一是非线性可逆变换
+  - 第二是Jacobian行列式易于计算
+  - 第三是逆变换容易计算
 
 ## 背景说明：
+- 在当时的时间节点，有几条比较成熟的技术路线用于生成建模
+  - VAE的问题是训练优化的是似然下界，而不是直接计算精确似然
+  - GAN的问题是无法直接计算 $p(x)$，容易出现模式崩溃和训练不稳定等问题
+ 
+- 因此NICE的出发点是希望直接建立一个可以精确计算数据概率密度的生成模型
 
+- NICE希望通过ICA（Independent Component Analysis）实现这一点，具体来说， $s$ 是相互独立的源信号； $A$ 是混合矩阵； $W$ 是线性可逆变换矩阵； $x$ 是观测信号
+- ICA 希望通过学习一个反变换，恢复出相互独立的源信号：
+
+$$
+s=W x
+$$
+- 但是传统 ICA 主要依赖线性变换，无法充分描述复杂的非线性数据分布，NICE因此想到将线性变换推广成深度神经网络，能否实现非线性的独立成分估计？
+- 但使用深度神经网络又会带来问题，即如果 $f_\theta$ 不可逆，我们就无法保证：原始数据能够被完整恢复；能够通过变量替换公式精确计算概率密度；可以从潜变量直接生成原始数据
+- 因此，NICE 的研究重点是寻找一类既能够表达复杂非线性关系，又能够保证可逆性和概率密度可计算性的神经网络
+
+- 下面我们具体分析一下可逆变换的必要性：
+- 假设我们已经定义了一个简单的潜变量分布：
+
+$$
+h\sim p_H(h)
+$$
+- 现在希望通过一个映射将简单分布转换为复杂的数据分布：
+
+$$
+x=f^{-1}(h)
+$$
+- 如果希望精确计算这个概率密度，就需要知道一个关键量：不同空间之间的体积变化
+- 假设：
+
+$$
+h=f(x)
+$$
+- 根据概率密度的变量替换公式：
+
+$$
+p_X(x)=
+p_H(f(x))
+\left|
+\det
+\frac{\partial f(x)}{\partial x}
+\right|
+$$
+- 取对数：
+
+$$
+\log p_X(x)=
+\log p_H(f(x))+
+\log
+\left|
+\det J_f(x)
+\right|
+$$
+- 变量替换公式要求变换是一个双射，并且需要维度保持一致；可逆性并不是为了让网络看起来更加特殊，而是为了建立一个精确的概率密度计算机制
+
+- 因此，NICE需要解决两个问题：如何让复杂的神经网络具有简单的逆变换；如何让复杂的非线性变换具有容易计算的 Jacobian 行列式
+  - NICE的核心创新就是Coupling Layer
 
 ## 具体分析：
+- 整个 NICE 模型实际上有两个方向
+  - 推理时，由数据到潜空间
+  - 生成时，由潜空间到数据空间
+  - NICE 的 Encoder 和 Decoder 并不是两个独立训练的网络，**它们是同一个可逆变换的正向和反向计算**
 
+- NICE的核心结构：Coupling Layer
+- 假设输入为：
+
+$$
+x\in \mathbb R^D
+$$
+- 将输入划分为两个子空间：
+
+$$
+x=(x_1,x_2)
+$$
+- 然后定义：
+
+$$
+\begin{aligned}
+y_1 &=x_1\\
+y_2 &=x_2+m(x_1)
+\end{aligned}
+$$
+- 这里的 $m(\cdot)$ 是一个任意的非线性函数，论文中使用的是基于 ReLU 的 MLP
+- 因为：
+
+$$
+\begin{aligned}
+x_1 &=y_1\\
+x_2 &=y_2-m(y_1)
+\end{aligned}
+$$
+- 虽然 $m$ 可以是一个非常复杂的深度神经网络，但整个 Coupling Layer 依然容易求逆；而且，逆运算的复杂度与正向运算基本相同
+- 接下来分析为什么 Coupling Layer 求Jacobian行列式也很简单：
+- 可以得到 Jacobian：
+
+$$
+J=
+\frac{\partial y}{\partial x}=
+\begin{bmatrix}
+\frac{\partial y_1}{\partial x_1}&
+\frac{\partial y_1}{\partial x_2}
+\frac{\partial y_2}{\partial x_1}&
+\frac{\partial y_2}{\partial x_2}
+\end{bmatrix}
+$$
+- 对上面的行列式分别求导，最后的行列式形式为：
+
+$$
+J=
+\begin{bmatrix}
+I&0\\
+J_m(x_1)&I
+\end{bmatrix}
+$$
+- 这是一个分块下三角矩阵；无论 \(m\) 是多么复杂的 MLP，它只出现在 Jacobian 的非对角块中； $m(x_1)$ 可以非常复杂，但我们完全不需要计算它的 Jacobian 行列式
+- 这就实现了一个非常重要的效果：使用深度神经网络提供复杂的非线性表达能力，同时通过结构设计保证概率密度计算的可处理性
+
+- 但我们仍需要多个Coupling Layers：
+  - 单个 Coupling Layer 存在一个明显的问题：输入的一部分维度完全没有被修改，如果始终保持相同的划分，那么这些维度就无法充分地相互影响
+  - 因此，NICE 使用**交替更新的方式**
+  - 通过这种方式，原本不直接修改的变量可以在后续层中参与非线性变换
+  - 每一层虽然只能直接更新一部分变量，但通过多层交替组合，可以建立整个输入空间中更加复杂的非线性依赖关系
+
+- NICE进一步引入了Scaling Layer
+  - Scaling Layer的引入其实可以通过概率建模思考，多个Coupling Layers 组合之后行列式依旧为1，这说明整个变换始终保持体积不变，其实也意味着是同维度的PDF变换，但实际上复杂的空间变换并不一定是同维度变换的，恰恰在很多情况下不是同维度，具体比如一张高维度图像，建模数据分布时不需要将所有维度都建模出来，图像的分布一定是在一个低维流形空间中的，因此，Scaling Layer通过点对点的缩放特征值来实现
+  - 论文引入了一个额外的对角缩放矩阵 $S$
+  - 定义 $h=Su$ ；其中 $u$ 是经过所有 Coupling Layers 后得到的变量，这个计算因为是点对点的，因此计算变换的Jacobian矩阵行列式也非常简单，即所有缩放系数的乘积
+  - 本质上，他就类似在各个特征维度调节方差，一旦方差为0，就等同于将这一维度减去，呈现出在高维空间坍缩的现象
 
 ## 实现细节：
+- 论文在四个数据集上进行了实验：
+  - MNIST
+  - Toronto Face Dataset（TFD）
+  - Street View House Numbers（SVHN）
+  - CIFAR-10
 
+- 整体结构由四个 Coupling Layers 和一个对角缩放层组成
+
+- NICE的参数规模大概在20M左右，对于一个只在CIFAR-10等数据集上生成的模型其实参数规模相当大
+
+- NICE 不需要 Reconstruction Loss，也不需要 GAN 中的对抗损失，更不需要 VAE 中的 KL 散度下界近似；它直接优化真实数据的对数似然
+
+- 论文还涉及一个容易被忽略的细节：图像数据的离散性
+  - NICE 建模的是连续概率密度
+  - 离散变量的概率质量与连续变量的概率密度并不是同一个概念，因此需要进行 Dequantization
+  - 论文采用 Uniform Dequantization：
+
+$$
+\tilde x=x+u
+$$
+  - 其中： $u\sim U(0,1)$ ，之后再进行归一化，将数据转换到适当的连续数值区间
+
+- NICE 不仅仅用于生成，还尝试了图像修复，原文Fig 6展示了MNIST上的修复效果，具体的方式就是寻找使完整图像具有最大概率的缺失区域
+- 这说明 NICE 学习到的不仅是生成过程，还获得了可以用于条件概率推断的数据分布模型
 
 ## 站在现在的角度，回看这篇文章
+- NICE的设计思路是：不直接设计一个复杂的生成分布，而是学习一个可逆的变换，将复杂的数据分布映射到简单的概率分布
 
+- 同时NICE的网络结构设计哲学是：不必要求网络内部的每一个运算都简单，只需要保证整体结构具有我们需要的数学性质
 
+- 后续的Glow和Real-NVP都在一定程度上改进了Coupling Layers的结构缺陷
+
+- NICE在现在的局限性体现在：
+  - 严格的维度保持
+  - 模型计算量高
+  - 图像生成质量有限
+  - 结构设计上有局限
+    
 ## 参考文章和博客，感谢他们的分析解读
+- [细水长flow之NICE：流模型的基本概念与实现](https://spaces.ac.cn/archives/5776)
+  - 苏剑林的解读有关于缩放层和Coupling Layers的图示和推导很好地说明了NICE的设计思维
 
