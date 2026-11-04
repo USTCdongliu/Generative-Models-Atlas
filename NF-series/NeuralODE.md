@@ -1,4 +1,4 @@
-# NFs
+# Neural ODE
 
 ## 发表情况
 - Chen, R. T., Rubanova, Y., Bettencourt, J., & Duvenaud, D. K. (2018). Neural ordinary differential equations. Advances in neural information processing systems, 31.
