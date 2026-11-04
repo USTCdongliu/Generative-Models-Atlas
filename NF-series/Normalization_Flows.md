@@ -6,14 +6,14 @@
 - 主要作者：Danilo Jimenez Rezende，Shakir Mohamed
   - Google Deepmind
 - 截止2026.10 cite：6983+
-- 
+- 将 Normalizing Flows 系统性地引入变分推断，通过一系列可逆变换构建高表达能力的近似后验分布，并提出计算代价较低的 Planar Flow 和 Radial Flow
 - [原文链接](https://proceedings.mlr.press/v37/rezende15.pdf)
 
 ## 摘要解读：
 
 
 ## 背景说明：
-
+- 
 
 ## 具体分析：
 
