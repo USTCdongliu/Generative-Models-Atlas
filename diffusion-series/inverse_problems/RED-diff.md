@@ -2,7 +2,7 @@
 
 - Mardani, M., Song, J., Kautz, J., & Vahdat, A. (2024, May). A variational perspective on solving inverse problems with diffusion models. In International Conference on Learning Representations (Vol. 2024, pp. 28027-28053).
   - ICLR 2024
-  - 区别于之前Chung和宋飏的工作，将预训练的DDPM作为正则化的部分，原文的说法是formulate sampling as optimization for inverse problems，区别于之前将正问题融入到条件采样生成过程中的做法，在形式上更类似RED之类将去噪器作为更强有力的先验的做法
+  - 将预训练的DDPM作为正则化的部分，原文的说法是formulate sampling as optimization for inverse problems，区别于之前将正问题融入到条件采样生成过程中的做法，在形式上更类似RED之类将去噪器作为更强有力的先验的做法
   - 核心思想是通过变分推断获取优化结果，出发点和VAE和DDPM的理论类似，希望得到x_0 given y的概率，如果这个后验概率不好求得，就通过一个更方便获取的分布去拟合他
 
 - 文章的主要对比对象是DDRM ΠGDM DPS
