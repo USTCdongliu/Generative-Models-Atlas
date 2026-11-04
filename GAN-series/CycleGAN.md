@@ -44,10 +44,10 @@ $$
 - 具体分析可以参照原文的第三部分
 
 - CycleGAN 的模型包含四个独立网络：
-- 生成器 $G:X\to Y$
-- 生成器 $F:Y\to X$
-- 判别器 $D_Y$：判断图像是否属于真实目标域 $Y$
-- 判别器 $D_X$：判断图像是否属于真实源域 $X$
+  - 生成器 $G:X\to Y$
+  - 生成器 $F:Y\to X$
+  - 判别器 $D_Y$：判断图像是否属于真实目标域 $Y$
+  - 判别器 $D_X$：判断图像是否属于真实源域 $X$
 
 - 具体的训练方式可以参照原文的图3
 ![https://github.com/wanna-bornb-disciplinant/Generative-Models-Atlas/blob/main/images/gan/4.png](https://github.com/wanna-bornb-disciplinant/Generative-Models-Atlas/blob/main/images/gan/4.png)
