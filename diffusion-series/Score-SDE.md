@@ -25,6 +25,8 @@
   - 提供了一种利用基于得分的模型解决反问题（inverse problems）的新途径，并通过类别条件生成、图像修复（inpainting）和图像上色等实验进行了验证--这是扩散模型和逆问题结合的一个重要开端
 
 ## 背景说明：
+- 强烈建议在阅读Score-SDE之前先阅读SMLD（即NCSN）和DDPM的分析
+
 - 背景就是SMLD和DDPM
   - SMLD（Score matching with Langevin dynamics）
     - 详见[https://github.com/wanna-bornb-disciplinant/Generative-Models-Atlas/blob/main/diffusion-series/NCSN.md](https://github.com/wanna-bornb-disciplinant/Generative-Models-Atlas/blob/main/diffusion-series/NCSN.md)
@@ -56,7 +58,7 @@
 - 值得注意的是，这三种前向SDE的具体形式其实已经能说明各自的特点，VE-SDE的信号均值不收缩，噪声方差逐渐增大，直到填满数据空间；VP-SDE的信号逐步衰减，方差趋向有限稳态；sub-VP-SDE的条件扰动方差更小，采用比VP-SDE更小的diffusion项
 
 - 在现有的三种SDE构建方式下，可以进一步分析反向SDE
-- 既然生成过程已经被定义为反向 SDE，那么原则上就可以直接使用 Euler–Maruyama、随机 Runge–Kutta 等现有数值方法进行采样
+- 既然生成过程已经被定义为反向SDE，那么原则上就可以直接使用 Euler–Maruyama、随机 Runge–Kutta 等现有数值方法进行采样
 - 这使生成算法不再局限于 DDPM 原有的 ancestral sampling 或 SMLD 的 Langevin Dynamics
 - 这一部分的最终含义是：**采样器不再必须与某一种训练方法绑定，只要知道前向 SDE 和训练好的 score，就可以尝试不同的反向数值求解方法**
 - 这里文章提出了几种具体的采样求解器，包括后面的Predictor-Corrector Samplers、由DDPM连续化获得的更优采样器reverse diffusion samplers、由ODE获得的probability flow sampling，这些需要结合ODE等点来统一讨论，此处不做展开
@@ -69,7 +71,10 @@
   - **DDPM 可以看成没有 corrector 的特殊 PC 方法**
 
 - **Probability Flow and Connection to Neural ODEs**是正文的另一大贡献
-- 对于给定的前向扩散过程，可以构造一个确定性 ODE，使得它在每个时间点都具有与原 SDE 相同的边际概率分布。该 ODE 的 drift 可以直接由原始 SDE 的 drift、diffusion 和 score 确定，因此不需要额外训练生成模型。它与反向 SDE 的主要形式区别是 score 修正项的系数从 \(g^2(t)\) 变为 \(\frac12g^2(t)\)，同时去掉随机噪声项。由于这一 ODE 的向量场由神经网络估计，它也是一种 Neural ODE，并可以利用连续变量变换公式计算模型的归一化概率密度，实现似然评估
+- 对于给定的前向扩散过程，可以构造一个确定性 ODE，使得它在每个时间点都具有与原 SDE 相同的边际概率分布
+- 在提出ODE前，可以先阅读NeuralODE的分析：
+- []
+- 该 ODE 的 drift 可以直接由原始 SDE 的 drift、diffusion 和 score 确定，因此不需要额外训练生成模型。它与反向 SDE 的主要形式区别是 score 修正项的系数从 \(g^2(t)\) 变为 \(\frac12g^2(t)\)，同时去掉随机噪声项。由于这一 ODE 的向量场由神经网络估计，它也是一种 Neural ODE，并可以利用连续变量变换公式计算模型的归一化概率密度，实现似然评估
 
 ## 实现细节：
 - 我们在实现细节部分补充附录和实验部分的一些具体细节
